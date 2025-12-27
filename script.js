@@ -15,20 +15,58 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const transactionsRef = db.ref('transactions');
 
-// 3) DOM REFERENCES (ids must match index.html)
+// 3) DOM REFERENCES
 const balance = document.getElementById('balance');
-const income = document.getElementById('income');
 const expense = document.getElementById('expense');
 const list = document.getElementById('list');
+
+const mainCategory = document.getElementById('main-category');
+const subCategory = document.getElementById('sub-category');
+const subCategoryOther = document.getElementById('sub-category-other');
+
 const text = document.getElementById('text');
 const amount = document.getElementById('amount');
-const category = document.getElementById('category');
 const addTransaction = document.getElementById('add-transaction');
 
-// In‑memory cache of transactions
+// In-memory cache
 let transactions = [];
 
-// 4) LISTEN TO FIREBASE CHANGES
+// ----- CATEGORY / SUBCATEGORY LOGIC -----
+
+// Update subcategory options when main category changes
+mainCategory.addEventListener('change', () => {
+  const value = mainCategory.value;
+
+  // Reset
+  subCategory.style.display = 'block';
+  subCategoryOther.style.display = 'none';
+  subCategory.innerHTML = '';
+
+  if (value === 'Me') {
+    // Only Siddu
+    const opt = document.createElement('option');
+    opt.value = 'Siddu';
+    opt.textContent = 'Siddu';
+    subCategory.appendChild(opt);
+  } else if (value === 'Family') {
+    ['Father', 'Mother', 'Brother', 'Sister'].forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      subCategory.appendChild(opt);
+    });
+  } else if (value === 'Other') {
+    // Use free-text input
+    subCategory.style.display = 'none';
+    subCategoryOther.style.display = 'block';
+  }
+});
+
+// Initialize default state (Me → Siddu)
+mainCategory.dispatchEvent(new Event('change'));
+
+// ----- FIREBASE LISTENER -----
+
 transactionsRef.on('value', snapshot => {
   const data = snapshot.val() || {};
   transactions = Object.keys(data).map(key => ({
@@ -38,79 +76,75 @@ transactionsRef.on('value', snapshot => {
   updateUI();
 });
 
-// 5) UPDATE TOTALS
+// ----- CALCULATIONS -----
+
 function updateValues() {
   const amounts = transactions.map(t => t.amount);
-
   const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
-  const incomeTotal = amounts
-    .filter(a => a > 0)
-    .reduce((acc, item) => acc + item, 0)
-    .toFixed(2);
-  const expenseTotal = (
-    amounts.filter(a => a < 0).reduce((acc, item) => acc + item, 0) * -1
-  ).toFixed(2);
+
+  // Only expenses (we store everything as negative)
+  const expenseTotal = (-1 * total).toFixed(2);
 
   balance.textContent = `$${total}`;
-  income.textContent = `$${incomeTotal}`;
   expense.textContent = `$${expenseTotal}`;
 }
 
-// 6) RENDER ONE ROW
+// ----- RENDERING -----
+
 function addTransactionDOM(transaction) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td>${transaction.date}</td>
-    <td>${transaction.category}</td>
+    <td>${transaction.mainCategory}</td>
+    <td>${transaction.subCategory}</td>
     <td>${transaction.text}</td>
-    <td class="amount ${transaction.amount < 0 ? 'expense' : ''}">
-      $${transaction.amount.toFixed(2)}
+    <td class="amount expense">
+      $${(-transaction.amount).toFixed(2)}
     </td>
-    <td><button data-id="${transaction.id}" class="delete-btn">X</button></td>
   `;
   list.appendChild(tr);
 }
 
-// 7) RENDER ALL + TOTALS
 function updateUI() {
   list.innerHTML = '';
   transactions.forEach(addTransactionDOM);
   updateValues();
 }
 
-// 8) ADD TRANSACTION (WRITE TO FIREBASE)
+// ----- ADD EXPENSE -----
+
 addTransaction.addEventListener('click', () => {
+  const mainCat = mainCategory.value;
+  let subCat = '';
+
+  if (mainCat === 'Other') {
+    subCat = subCategoryOther.value.trim();
+  } else {
+    subCat = subCategory.value;
+  }
+
   const textValue = text.value.trim();
   const amountValue = parseFloat(amount.value);
-  const categoryValue = category.value;
 
-  if (!textValue || isNaN(amountValue) || amountValue === 0) {
-    alert('Please enter valid description, category, and amount.');
+  if (!mainCat || !subCat || !textValue || isNaN(amountValue) || amountValue <= 0) {
+    alert('Please enter valid category, subcategory, description, and amount.');
     return;
   }
 
   const transaction = {
+    mainCategory: mainCat,
+    subCategory: subCat,
     text: textValue,
-    amount: amountValue * -1, // Expense stored as negative
-    category: categoryValue,
+    amount: amountValue * -1, // store as negative
     date: new Date().toISOString().split('T')[0],
   };
 
-  // Push to Realtime Database
   transactionsRef.push(transaction);
 
   // Clear inputs
   text.value = '';
   amount.value = '';
-  category.value = 'Personal - Food';
+  if (mainCat === 'Other') subCategoryOther.value = '';
 });
 
-// 9) DELETE TRANSACTION
-list.addEventListener('click', e => {
-  if (e.target.classList.contains('delete-btn')) {
-    const id = e.target.getAttribute('data-id');
-    if (id) {
-      transactionsRef.child(id).remove();
-    }
-  }
-});
+// No delete logic anymore
