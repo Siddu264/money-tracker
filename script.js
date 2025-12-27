@@ -33,37 +33,45 @@ let transactions = [];
 
 // ----- CATEGORY / SUBCATEGORY LOGIC -----
 
-// Update subcategory options when main category changes
-mainCategory.addEventListener('change', () => {
+function setSubcategoryOptions() {
   const value = mainCategory.value;
 
-  // Reset
+  // reset both controls
   subCategory.style.display = 'block';
   subCategoryOther.style.display = 'none';
   subCategory.innerHTML = '';
 
   if (value === 'Me') {
-    // Only Siddu
+    // Me -> Siddu
     const opt = document.createElement('option');
     opt.value = 'Siddu';
     opt.textContent = 'Siddu';
     subCategory.appendChild(opt);
+    subCategory.value = 'Siddu';
   } else if (value === 'Family') {
-    ['Father', 'Mother', 'Brother', 'Sister'].forEach(name => {
+    // Family -> Father/Mother/Brother/Sister
+    const familyMembers = ['Father', 'Mother', 'Brother', 'Sister'];
+    familyMembers.forEach(name => {
       const opt = document.createElement('option');
       opt.value = name;
       opt.textContent = name;
       subCategory.appendChild(opt);
     });
+    // no default selection; user must choose
+    subCategory.value = '';
   } else if (value === 'Other') {
-    // Use free-text input
+    // Other -> free text only
     subCategory.style.display = 'none';
     subCategoryOther.style.display = 'block';
+    subCategoryOther.value = '';   // clear previous text
   }
-});
+}
 
-// Initialize default state (Me → Siddu)
-mainCategory.dispatchEvent(new Event('change'));
+// run once on load
+setSubcategoryOptions();
+
+// update when main category changes
+mainCategory.addEventListener('change', setSubcategoryOptions);
 
 // ----- FIREBASE LISTENER -----
 
@@ -82,7 +90,7 @@ function updateValues() {
   const amounts = transactions.map(t => t.amount);
   const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
 
-  // Only expenses (we store everything as negative)
+  // we store all expenses as negative, so total is negative
   const expenseTotal = (-1 * total).toFixed(2);
 
   balance.textContent = `$${total}`;
@@ -132,19 +140,4 @@ addTransaction.addEventListener('click', () => {
   }
 
   const transaction = {
-    mainCategory: mainCat,
-    subCategory: subCat,
-    text: textValue,
-    amount: amountValue * -1, // store as negative
-    date: new Date().toISOString().split('T')[0],
-  };
-
-  transactionsRef.push(transaction);
-
-  // Clear inputs
-  text.value = '';
-  amount.value = '';
-  if (mainCat === 'Other') subCategoryOther.value = '';
-});
-
-// No delete logic anymore
+    main
