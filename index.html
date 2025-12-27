@@ -1,5 +1,87 @@
-<!-- Firebase SDKs (add before script.js) -->
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Money Tracker</h1>
+        
+        <div class="balance">
+            <h2>Your Balance</h2>
+            <p id="balance">$0.00</p>
+        </div>
 
-<script src="script.js"></script>
+        <div class="income-expense">
+            <div>
+                <h3>Income</h3>
+                <p id="income">$0.00</p>
+            </div>
+            <div class="expense">
+                <h3>Expenses</h3>
+                <p id="expense">$0.00</p>
+            </div>
+        </div>
+
+        <div class="form">
+            <h3>Add Transaction</h3>
+            <div class="form-control">
+                <label for="category">Category</label>
+                <select id="category">
+                    <optgroup label="Personal">
+                        <option value="Personal - Food">Food</option>
+                        <option value="Personal - Shopping">Shopping</option>
+                        <option value="Personal - Entertainment">Entertainment</option>
+                    </optgroup>
+                    <optgroup label="Family">
+                        <option value="Family - Food">Family Food</option>
+                        <option value="Family - Medical">Family Medical</option>
+                        <option value="Family - Education">Family Education</option>
+                    </optgroup>
+                    <optgroup label="Others">
+                        <option value="Others - Gifts">Gifts</option>
+                        <option value="Others - Charity">Charity</option>
+                        <option value="Others - Transport">Transport</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="form-control">
+                <label for="text">Description</label>
+                <input type="text" id="text" placeholder="Enter reason for spending">
+            </div>
+            <div class="form-control">
+                <label for="amount">Amount</label>
+                <input type="number" id="amount" placeholder="Enter amount" step="0.01">
+            </div>
+            <button class="btn" id="add-transaction">Add Transaction</button>
+        </div>
+
+        <div class="history">
+            <h3>Transaction History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs MUST be before script.js -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
+    <!-- Your app logic -->
+    <script src="script.js"></script>
+</body>
+</html>
