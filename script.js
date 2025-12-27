@@ -1,4 +1,4 @@
-// 1) YOUR FIREBASE CONFIG (from console)
+// 1) YOUR FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyDlLtvGl76nPeYLtoBNwAzmKcdkygg9TnQ",
   authDomain: "moneytracker-5fe0c.firebaseapp.com",
@@ -10,12 +10,12 @@ const firebaseConfig = {
   measurementId: "G-8NDM3SFC0N"
 };
 
-// 2) INITIALIZE FIREBASE (compat syntax)
+// 2) INITIALIZE FIREBASE (compat)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const transactionsRef = db.ref('transactions');
 
-// 3) YOUR EXISTING DOM REFERENCES
+// 3) DOM REFERENCES (ids must match index.html)
 const balance = document.getElementById('balance');
 const income = document.getElementById('income');
 const expense = document.getElementById('expense');
@@ -25,33 +25,38 @@ const amount = document.getElementById('amount');
 const category = document.getElementById('category');
 const addTransaction = document.getElementById('add-transaction');
 
-// In‑memory array (we will fill this from Firebase)
+// In‑memory cache of transactions
 let transactions = [];
 
-// 4) LOAD DATA FROM FIREBASE (runs whenever data changes)
+// 4) LISTEN TO FIREBASE CHANGES
 transactionsRef.on('value', snapshot => {
   const data = snapshot.val() || {};
   transactions = Object.keys(data).map(key => ({
-    id: key,              // Firebase push key
-    ...data[key]
+    id: key,
+    ...data[key],
   }));
   updateUI();
 });
 
-// 5) CALCULATION LOGIC (same as yours)
+// 5) UPDATE TOTALS
 function updateValues() {
   const amounts = transactions.map(t => t.amount);
+
   const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
-  const incomeTotal = amounts.filter(a => a > 0)
-    .reduce((acc, item) => acc + item, 0).toFixed(2);
-  const expenseTotal = (amounts.filter(a => a < 0)
-    .reduce((acc, item) => acc + item, 0) * -1).toFixed(2);
+  const incomeTotal = amounts
+    .filter(a => a > 0)
+    .reduce((acc, item) => acc + item, 0)
+    .toFixed(2);
+  const expenseTotal = (
+    amounts.filter(a => a < 0).reduce((acc, item) => acc + item, 0) * -1
+  ).toFixed(2);
 
   balance.textContent = `$${total}`;
   income.textContent = `$${incomeTotal}`;
   expense.textContent = `$${expenseTotal}`;
 }
 
+// 6) RENDER ONE ROW
 function addTransactionDOM(transaction) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -66,13 +71,14 @@ function addTransactionDOM(transaction) {
   list.appendChild(tr);
 }
 
+// 7) RENDER ALL + TOTALS
 function updateUI() {
   list.innerHTML = '';
   transactions.forEach(addTransactionDOM);
   updateValues();
 }
 
-// 6) ADD TRANSACTION → WRITE TO FIREBASE (no localStorage)
+// 8) ADD TRANSACTION (WRITE TO FIREBASE)
 addTransaction.addEventListener('click', () => {
   const textValue = text.value.trim();
   const amountValue = parseFloat(amount.value);
@@ -85,21 +91,22 @@ addTransaction.addEventListener('click', () => {
 
   const transaction = {
     text: textValue,
-    amount: amountValue * -1, // expense = negative
+    amount: amountValue * -1, // Expense stored as negative
     category: categoryValue,
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
   };
 
-  // push to Firebase → triggers .on('value') listener
+  // Push to Realtime Database
   transactionsRef.push(transaction);
 
+  // Clear inputs
   text.value = '';
   amount.value = '';
-  category.value = 'Food';
+  category.value = 'Personal - Food';
 });
 
-// 7) DELETE TRANSACTION (click X)
-list.addEventListener('click', (e) => {
+// 9) DELETE TRANSACTION
+list.addEventListener('click', e => {
   if (e.target.classList.contains('delete-btn')) {
     const id = e.target.getAttribute('data-id');
     if (id) {
